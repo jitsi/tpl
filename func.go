@@ -1,40 +1,16 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"os"
-	"path"
 	"strconv"
-	"strings"
 	"text/template"
-	"time"
 
-	"github.com/BurntSushi/toml"
 	"github.com/Masterminds/sprig"
-	"github.com/go-yaml/yaml"
-	"github.com/ismferd/ssm/package/parameterstore"
-	"github.com/overdrive3000/secretsmanager"
 )
 
 func FuncMap(templateName string) template.FuncMap {
 	f := sprig.TxtFuncMap()
-	// marshal
-	f["toJson"] = toJson
-	f["toYaml"] = toYaml
-	f["toToml"] = toToml
+	// marshaling
 	f["toBool"] = toBool
-	// file
-	f["fileExists"] = fileExists
-	f["fileSize"] = fileSize
-	f["fileLastModified"] = fileLastModified
-	f["fileGetBytes"] = fileGetBytes
-	f["fileGetString"] = fileGetString
-
-	// include
-	f["include"] = include(templateName)
 
 	// strings
 	f["countRune"] = func(s string) int {
@@ -55,66 +31,7 @@ func FuncMap(templateName string) template.FuncMap {
 		return oRegexSplit(regex, input, n)
 	}
 
-	// Add function to get secrets from AWS Secrets Manager
-	f["awsSecret"] = getAWSSecret
-	f["awsParameterStore"] = getAWSParameterStore
-
 	return f
-}
-
-// getAWSSecret return a scret stored in AWS Secret Manager
-// function accepts as parameter secret name and secret key.
-// if secret key is not set then will return firt key stored in
-// secret.
-func getAWSSecret(secret ...string) string {
-	var name, key string
-	c := secretsmanager.New(
-		&secretsmanager.AWSConfig{},
-	)
-
-	name = secret[0]
-
-	if len(secret) == 2 {
-		key = secret[1]
-	}
-
-	spec := &secretsmanager.SecretSpec{
-		Name: name,
-		Key:  key,
-	}
-
-	s, err := c.GetSecret(spec)
-	if err != nil {
-		if Strict {
-			panic(err)
-		}
-		return ""
-	}
-
-	return s
-}
-
-// getAWSParameterStore return a parameter stored in AWS SSM Parameter Store.
-// function accepts as parameter a names.
-func getAWSParameterStore(parameter string) string {
-
-	c := parameterstore.New(
-		&parameterstore.AWSConfig{},
-	)
-
-	spec := &parameterstore.ParemeterString{
-		Name: parameter,
-	}
-
-	p, err := c.GetParam(spec)
-	if err != nil {
-		if Strict {
-			panic(err)
-		}
-		return ""
-	}
-
-	return p
 }
 
 // toBool takes a string and converts it to a bool.
@@ -131,150 +48,4 @@ func toBool(value string) bool {
 		return false
 	}
 	return result
-}
-
-// toJson takes an interface, marshals it to json, and returns a string.
-// On marshal error will panic if in strict mode, otherwise returns empty string.
-//
-// This is designed to be called from a template.
-func toJson(v interface{}) string {
-	data, err := json.Marshal(v)
-	if err != nil {
-		if Strict {
-			panic(err.Error())
-		}
-		return ""
-	}
-	return string(data)
-}
-
-// toYaml takes an interface, marshals it to yaml, and returns a string.
-// On marshal error will panic if in strict mode, otherwise returns empty string.
-//
-// This is designed to be called from a template.
-func toYaml(v interface{}) string {
-	data, err := yaml.Marshal(v)
-	if err != nil {
-		if Strict {
-			panic(err.Error())
-		}
-		return ""
-	}
-	return string(data)
-}
-
-// toToml takes an interface, marshals it to toml, and returns a string.
-// On marshal error will panic if in strict mode, otherwise returns empty string.
-//
-// This is designed to be called from a template.
-func toToml(v interface{}) string {
-	b := bytes.NewBuffer(nil)
-	e := toml.NewEncoder(b)
-	err := e.Encode(v)
-	if err != nil {
-		if Strict {
-			panic(err.Error())
-		}
-		return ""
-	}
-	return b.String()
-}
-
-func fileExists(file string) bool {
-	_, err := os.Stat(file)
-
-	return err == nil
-}
-
-func fileSize(file string) int64 {
-	info, err := os.Stat(file)
-	if err != nil {
-		if Strict {
-			panic(err.Error())
-		}
-		return 0
-	}
-	return info.Size()
-}
-
-func fileLastModified(file string) time.Time {
-	info, err := os.Stat(file)
-	if err != nil {
-		if Strict {
-			panic(err.Error())
-		}
-		return time.Unix(0, 0)
-	}
-	return info.ModTime()
-}
-
-func fileGetBytes(file string) []byte {
-	data, err := ioutil.ReadFile(file)
-	if err != nil {
-		if Strict {
-			panic(err.Error())
-		}
-		return []byte{}
-	}
-	return data
-}
-
-func fileGetString(file string) string {
-	data, err := ioutil.ReadFile(file)
-	if err != nil {
-		if Strict {
-			panic(err.Error())
-		}
-		return ""
-	}
-	return string(data)
-}
-
-type relativeIncludeFunc func(include string) string
-
-func include(callingFile string) relativeIncludeFunc {
-	filePair := strings.SplitN(callingFile, ":", 2)
-	callingFile = filePair[0]
-
-	return func(includedFile string) string {
-		if !path.IsAbs(includedFile) {
-			includedFile = path.Join(path.Dir(callingFile), includedFile)
-		}
-
-		t := template.New(includedFile)
-		t.Delims(delims[0], delims[1])
-		t.Funcs(FuncMap(includedFile))
-
-		var err error
-		var templateBytes []byte
-
-		templateBytes, err = ioutil.ReadFile(includedFile)
-		if err != nil {
-			if Strict {
-				panic(fmt.Errorf("unable to read from %v, caused:\n\n   %v\n", includedFile, err))
-			}
-			return ""
-		}
-
-		tmpl, err := t.Parse(string(templateBytes))
-		if err != nil {
-			if Strict {
-				panic(fmt.Errorf("unable to parse template file, caused:\n\n   %v\n", err))
-			}
-			return ""
-		}
-
-		var output bytes.Buffer
-		err = tmpl.Execute(&output, ctx)
-
-		if err != nil {
-			if Strict {
-				panic(fmt.Errorf("render template error, caused:\n\n   %v\n", err))
-			}
-			return ""
-		}
-
-		return output.String()
-	}
-
 }

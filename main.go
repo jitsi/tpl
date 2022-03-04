@@ -2,15 +2,12 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
 	"text/template"
 
-	"github.com/BurntSushi/toml"
-	"github.com/go-yaml/yaml"
 	"github.com/subchen/go-cli"
 )
 
@@ -25,15 +22,9 @@ var (
 
 // flags
 var (
-	EnvironList  []string
-	JsonStr      string
-	LoadFileList []string
-	Overwrite    bool
-	Dryrun       bool
-	NoSysEnv     bool
-	Delims       string
-	Strict       bool
-	Missing      string
+	Delims  string
+	Strict  bool
+	Missing string
 )
 
 // template shared context
@@ -44,180 +35,52 @@ var (
 
 // create template context
 func newTemplateVariables() map[string]interface{} {
-
 	var vars = make(map[string]interface{})
 
-	// Env
-	if !NoSysEnv {
-		envs := make(map[string]interface{})
-		for _, env := range os.Environ() {
-			kv := strings.SplitN(env, "=", 2)
-			envs[kv[0]] = kv[1] // .Env.name
-			vars[kv[0]] = kv[1] // override using system env in root scope
-		}
-		vars["Env"] = envs
-	}
-
-	// --json
-	if JsonStr != "" {
-		var obj map[string]interface{}
-		if err := json.Unmarshal([]byte(JsonStr), &obj); err != nil {
-			panic(fmt.Errorf("bad json format: %v", err))
-		}
-		for k, v := range obj {
-			vars[k] = v
-		}
-	}
-
-	// --load
-	for _, file := range LoadFileList {
-		if bytes, err := ioutil.ReadFile(file); err != nil {
-			panic(fmt.Errorf("cannot load file, caused:\n\n   %v\n", err))
-		} else {
-			var obj map[string]interface{}
-			if strings.HasSuffix(file, ".json") {
-				if err := json.Unmarshal(bytes, &obj); err != nil {
-					panic(fmt.Errorf("bad json format, caused:\n\n   %v\n", err))
-				}
-			} else if strings.HasSuffix(file, ".yaml") || strings.HasSuffix(file, ".yml") {
-				if err := yaml.Unmarshal(bytes, &obj); err != nil {
-					panic(fmt.Errorf("bad yaml format, caused:\n\n   %v\n", err))
-				}
-			} else if strings.HasSuffix(file, ".toml") {
-				if err := toml.Unmarshal(bytes, &obj); err != nil {
-					panic(fmt.Errorf("bad toml format, caused:\n\n   %v\n", err))
-				}
-			} else {
-				panic(fmt.Errorf("bad file type: %s", file))
-			}
-			for k, v := range obj {
-				vars[k] = v
-			}
-		}
-	}
-
-	// --env
-	for _, env := range EnvironList {
+	envs := make(map[string]interface{})
+	for _, env := range os.Environ() {
 		kv := strings.SplitN(env, "=", 2)
-
-		// remove quotes for key="value"
-		v := kv[1]
-		if strings.HasPrefix(v, "\"") && strings.HasSuffix(v, "\"") {
-			v = v[1 : len(v)-1]
-		} else if strings.HasPrefix(v, "'") && strings.HasSuffix(v, "'") {
-			v = v[1 : len(v)-1]
-		}
-		vars[kv[0]] = v
+		envs[kv[0]] = kv[1] // .Env.name
 	}
+	vars["Env"] = envs
 
 	return vars
 }
 
-func templateExecute(t *template.Template, file string) {
-	filePair := strings.SplitN(file, ":", 2)
-	srcFile := filePair[0]
-	destFile := ""
-
-	if len(filePair) == 2 {
-		destFile = filePair[1]
-	} else {
-		if srcFile == "-" {
-			destFile = srcFile
-		} else if pos := strings.LastIndex(srcFile, "."); pos == -1 {
-			destFile = srcFile
-		} else {
-			destFile = srcFile[0:pos]
-		}
-	}
-
+func templateExecute(t *template.Template, srcFile string) {
 	var err error
 	var templateBytes []byte
 
-	if srcFile == "-" {
-		templateBytes, err = ioutil.ReadAll(os.Stdin)
-	} else {
-		templateBytes, err = ioutil.ReadFile(srcFile)
-	}
+	templateBytes, err = ioutil.ReadFile(srcFile)
 	if err != nil {
-		panic(fmt.Errorf("unable to read from %v, caused:\n\n   %v\n", srcFile, err))
+		panic(fmt.Errorf("unable to read from %v: %v", srcFile, err))
 	}
 
 	tmpl, err := t.Parse(string(templateBytes))
 	if err != nil {
-		panic(fmt.Errorf("unable to parse template file, caused:\n\n   %v\n", err))
+		panic(fmt.Errorf("unable to parse template file: %v", err))
 	}
 
 	var output bytes.Buffer
 	err = tmpl.Execute(&output, ctx)
 	if err != nil {
-		panic(fmt.Errorf("render template error, caused:\n\n   %v\n", err))
+		panic(fmt.Errorf("render template error: %v", err))
 	}
 
-	dest := os.Stdout
-	if Dryrun || destFile == "-" {
-		dest.Write(output.Bytes())
-		return
-	}
-
-	if !Overwrite {
-		if _, err := os.Stat(destFile); err == nil {
-			panic(fmt.Errorf("unable to overwrite destination file: %s", destFile))
-		}
-	}
-
-	dest, err = os.Create(destFile)
+	_, err = os.Stdout.Write(output.Bytes())
 	if err != nil {
-		panic(fmt.Errorf("unable to create file, caused:\n\n   %v\n", err))
-	}
-	defer dest.Close()
-
-	_, err = dest.Write(output.Bytes())
-	if err != nil {
-		panic(fmt.Errorf("unable to write file, caused:\n\n   %v\n", err))
+		panic(fmt.Errorf("error writing template: %v", err))
 	}
 }
 
 func main() {
 	app := cli.NewApp()
-	app.Name = "frep"
+	app.Name = "tol"
 	app.Usage = "Generate file using template"
 	app.UsageText = "[options] input-file[:output-file] ..."
 	app.Authors = "Guoqiang Chen <subchen@gmail.com>"
 
 	app.Flags = []*cli.Flag{
-		{
-			Name:        "e, env",
-			Usage:       "set variable name=value, can be passed multiple times",
-			Placeholder: "name=value",
-			Value:       &EnvironList,
-		},
-		{
-			Name:        "json",
-			Usage:       "load variables from json object string",
-			Placeholder: "jsonstring",
-			Value:       &JsonStr,
-		},
-		{
-			Name:        "load",
-			Usage:       "load variables from json/yaml/toml file",
-			Placeholder: "file",
-			Value:       &LoadFileList,
-		},
-		{
-			Name:  "no-sys-env",
-			Usage: "exclude system environments, default false",
-			Value: &NoSysEnv,
-		},
-		{
-			Name:  "overwrite",
-			Usage: "overwrite if destination file exists",
-			Value: &Overwrite,
-		},
-		{
-			Name:  "dryrun",
-			Usage: "just output result to console instead of file",
-			Value: &Dryrun,
-		},
 		{
 			Name:  "strict",
 			Usage: "exit on any error during template processing",
