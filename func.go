@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/Masterminds/sprig"
+	sprig "github.com/Masterminds/sprig/v3"
 )
 
 func FuncMap(templateName string) template.FuncMap {
