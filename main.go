@@ -20,17 +20,9 @@ var (
 	BuildDate      string
 )
 
-// flags
-var (
-	Delims  string
-	Strict  bool
-	Missing string
-)
-
 // template shared context
 var (
-	delims []string
-	ctx    interface{}
+	ctx interface{}
 )
 
 // create template context
@@ -80,26 +72,6 @@ func main() {
 	app.UsageText = "[options] input-file[:output-file] ..."
 	app.Authors = "Guoqiang Chen <subchen@gmail.com>"
 
-	app.Flags = []*cli.Flag{
-		{
-			Name:  "strict",
-			Usage: "exit on any error during template processing",
-			Value: &Strict,
-		},
-		{
-			Name:     "delims",
-			Usage:    "template tag delimiters",
-			DefValue: "{{:}}",
-			Value:    &Delims,
-		},
-		{
-			Name:     "missing",
-			Usage:    "handling of missing vars, one of: default/invalid, zero, error",
-			DefValue: "default",
-			Value:    &Missing,
-		},
-	}
-
 	app.Examples = strings.TrimSpace(`
 frep nginx.conf.in -e webroot=/usr/share/nginx/html -e port=8080
 frep nginx.conf.in:/etc/nginx.conf -e webroot=/usr/share/nginx/html -e port=8080
@@ -129,19 +101,13 @@ echo "{{ .Env.PATH }}"  | frep -
 			}
 		}()
 
-		delims = strings.Split(Delims, ":")
-		if len(Delims) < 3 || len(delims) != 2 {
-			panic(fmt.Errorf("bad delimiters argument: %s. expected \"left:right\"", Delims))
-		}
-
 		ctx = newTemplateVariables()
 		for _, file := range c.Args() {
 			filePair := strings.SplitN(file, ":", 2)
 			srcFile := filePair[0]
 
 			t := template.New(srcFile)
-			t.Option(fmt.Sprintf("missingkey=%s", Missing))
-			t.Delims(delims[0], delims[1])
+			t.Option("missingkey=error")
 			t.Funcs(FuncMap(file))
 
 			templateExecute(t, file)

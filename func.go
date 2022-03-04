@@ -42,10 +42,7 @@ func FuncMap(templateName string) template.FuncMap {
 func toBool(value string) bool {
 	result, err := strconv.ParseBool(value)
 	if err != nil {
-		if Strict {
-			panic(err.Error())
-		}
-		return false
+		panic(err.Error())
 	}
 	return result
 }
