@@ -1,2 +1,0 @@
-access_log off;
-log_format json_combined escape=json {{ include "./log_format.json" | nospace | squote }};
