@@ -64,7 +64,7 @@ func main() {
 	srcFile := os.Args[1]
 	ctx = newTemplateVariables()
 	t := template.New(srcFile)
-	t.Option("missingkey=error")
+	t.Option("missingkey=default")
 	t.Funcs(FuncMap())
 	templateExecute(t, srcFile)
 }
