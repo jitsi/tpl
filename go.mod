@@ -1,4 +1,4 @@
-module github.com/subchen/frep
+module github.com/jitsi/tpl
 
 require (
 	github.com/Masterminds/sprig/v3 v3.2.2
@@ -8,7 +8,6 @@ require (
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/stretchr/testify v1.7.0 // indirect
-	github.com/subchen/go-cli v2.0.3+incompatible
 	golang.org/x/crypto v0.0.0-20220214200702-86341886e292 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )

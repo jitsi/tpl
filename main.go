@@ -7,17 +7,6 @@ import (
 	"os"
 	"strings"
 	"text/template"
-
-	"github.com/subchen/go-cli"
-)
-
-// version
-var (
-	BuildVersion   string
-	BuildGitBranch string
-	BuildGitRev    string
-	BuildGitCommit string
-	BuildDate      string
 )
 
 // template shared context
@@ -66,53 +55,16 @@ func templateExecute(t *template.Template, srcFile string) {
 }
 
 func main() {
-	app := cli.NewApp()
-	app.Name = "tol"
-	app.Usage = "Generate file using template"
-	app.UsageText = "[options] input-file[:output-file] ..."
-	app.Authors = "Guoqiang Chen <subchen@gmail.com>"
-
-	app.Examples = strings.TrimSpace(`
-frep nginx.conf.in -e webroot=/usr/share/nginx/html -e port=8080
-frep nginx.conf.in:/etc/nginx.conf -e webroot=/usr/share/nginx/html -e port=8080
-frep nginx.conf.in --json '{"webroot": "/usr/share/nginx/html", "port": 8080}'
-frep nginx.conf.in --load config.json --overwrite
-echo "{{ .Env.PATH }}"  | frep -
-`)
-
-	app.Version = BuildVersion
-	app.BuildInfo = &cli.BuildInfo{
-		GitBranch:   BuildGitBranch,
-		GitCommit:   BuildGitCommit,
-		GitRevCount: BuildGitRev,
-		Timestamp:   BuildDate,
+	argLength := len(os.Args[1:])
+	if argLength != 1 {
+		fmt.Print("Missing source file")
+		os.Exit(1)
 	}
 
-	app.Action = func(c *cli.Context) {
-		if c.NArg() == 0 {
-			c.ShowHelp()
-			return
-		}
-
-		defer func() {
-			if err := recover(); err != nil {
-				os.Stderr.WriteString(fmt.Sprintf("fatal: %v\n", err))
-				os.Exit(1)
-			}
-		}()
-
-		ctx = newTemplateVariables()
-		for _, file := range c.Args() {
-			filePair := strings.SplitN(file, ":", 2)
-			srcFile := filePair[0]
-
-			t := template.New(srcFile)
-			t.Option("missingkey=error")
-			t.Funcs(FuncMap(file))
-
-			templateExecute(t, file)
-		}
-	}
-
-	app.Run(os.Args)
+	srcFile := os.Args[1]
+	ctx = newTemplateVariables()
+	t := template.New(srcFile)
+	t.Option("missingkey=error")
+	t.Funcs(FuncMap())
+	templateExecute(t, srcFile)
 }

@@ -7,8 +7,10 @@ import (
 	"github.com/Masterminds/sprig/v3"
 )
 
-func FuncMap(templateName string) template.FuncMap {
+func FuncMap() template.FuncMap {
+	// sprig
 	f := sprig.TxtFuncMap()
+
 	// marshaling
 	f["toBool"] = toBool
 
