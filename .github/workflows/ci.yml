@@ -4,8 +4,6 @@ on:
   push:
     branches:
     - master
-  release:
-    types: [ published ]
 
 jobs:
   build-deploy:
@@ -19,9 +17,4 @@ jobs:
       run: |
         go version
         make build-all
-        ls _releases/
-    - uses: actions/upload-artifact@v2
-      if: github.event_name == 'release' && github.event.action == 'published'
-      with:
-        name: binaries
-        path: _releases/*
+        ls -lh _releases/
