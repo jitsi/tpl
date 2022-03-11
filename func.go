@@ -2,6 +2,7 @@ package main
 
 import (
 	"strconv"
+	"strings"
 	"text/template"
 
 	"github.com/Masterminds/sprig/v3"
@@ -42,7 +43,9 @@ func FuncMap() template.FuncMap {
 //
 // This is designed to be called from a template.
 func toBool(value string) bool {
-	result, err := strconv.ParseBool(value)
+	v := strings.ReplaceAll(value, "\"", "")
+	v = strings.ReplaceAll(v, "'", "")
+	result, err := strconv.ParseBool(v)
 	if err != nil {
 		panic(err.Error())
 	}
