@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches:
+    - master
+  release:
+    types: [ published ]
+
+jobs:
+  build-deploy:
+    runs-on: macOS-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-go@v2
+      with:
+        go-version: '1.16.3'
+    - name: Build
+      run: |
+        go version
+        make build-all
+        ls _releases/
+    - uses: actions/upload-artifact@v2
+      if: github.event_name == 'release' && github.event.action == 'published'
+      with:
+        name: binaries
+        path: _releases/*
