@@ -57,7 +57,7 @@ func templateExecute(t *template.Template, srcFile string) {
 func main() {
 	argLength := len(os.Args[1:])
 	if argLength != 1 {
-		fmt.Print("Missing source file")
+		fmt.Print("Missing source file\n")
 		os.Exit(1)
 	}
 
