@@ -26,6 +26,8 @@ build-linux: clean fmt
 		go build -ldflags "$(LDFLAGS)" -o _releases/$(NAME)-linux-amd64
 	GOOS=linux GOARCH=arm64 \
 		go build -ldflags "$(LDFLAGS)" -o _releases/$(NAME)-linux-arm64
+	GOOS=linux GOARCH=riscv64 \
+		go build -ldflags "$(LDFLAGS)" -o _releases/$(NAME)-linux-riscv64
 
 build-darwin: clean fmt
 	GOOS=darwin GOARCH=amd64 \
