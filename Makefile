@@ -15,6 +15,9 @@ fmt:
 lint:
 	go vet ./...
 
+deps-update:
+	go get -u ./...
+
 build-all: \
     build-linux \
     build-darwin
