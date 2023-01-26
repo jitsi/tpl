@@ -17,4 +17,8 @@ jobs:
       run: |
         go version
         make build-all
-        ls -lh _releases/
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: _releases/*
