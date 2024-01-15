@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 	"text/template"
@@ -32,7 +31,7 @@ func templateExecute(t *template.Template, srcFile string) {
 	var err error
 	var templateBytes []byte
 
-	templateBytes, err = ioutil.ReadFile(srcFile)
+	templateBytes, err = os.ReadFile(srcFile)
 	if err != nil {
 		panic(fmt.Errorf("unable to read from %v: %v", srcFile, err))
 	}
