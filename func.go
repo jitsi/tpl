@@ -42,12 +42,26 @@ func FuncMap() template.FuncMap {
 // It accepts 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False.
 //
 // This is designed to be called from a template.
-func toBool(value string) bool {
-	v := strings.ReplaceAll(value, "\"", "")
-	v = strings.ReplaceAll(v, "'", "")
-	result, err := strconv.ParseBool(v)
-	if err != nil {
-		panic(err.Error())
+func toBool(value interface{}) bool {
+	switch val := value.(type) {
+	case int:
+		return val != 0
+	case float32:
+	case float64:
+		return val != 0.0
+	case string:
+		v := strings.Replace(val, "\"", "", -1)
+		v = strings.ReplaceAll(v, "'", "")
+		result, err := strconv.ParseBool(v)
+		if err != nil {
+			panic(err.Error())
+		}
+		return result
+	case bool:
+		return val
+	default:
+		panic("unsupported value type")
 	}
-	return result
+
+	return false // appease the linter
 }
