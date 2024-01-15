@@ -1,6 +1,6 @@
 # tpl
 
-Simple templating from envirionment variables.
+Simple templating from environment variables.
 
 ## Usage
 
