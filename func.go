@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"text/template"
@@ -59,8 +60,10 @@ func toBool(value interface{}) bool {
 		return result
 	case bool:
 		return val
+	case nil:
+		return false
 	default:
-		panic("unsupported value type")
+		panic(fmt.Sprintf("unsupported value type %s", val))
 	}
 
 	return false // appease the linter
