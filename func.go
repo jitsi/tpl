@@ -55,7 +55,7 @@ func toBool(value interface{}) bool {
 		v = strings.ReplaceAll(v, "'", "")
 		result, err := strconv.ParseBool(v)
 		if err != nil {
-			panic(err.Error())
+			return len(v) > 0
 		}
 		return result
 	case bool:
