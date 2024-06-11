@@ -27,14 +27,14 @@ Templates use Golang [text/template](http://golang.org/pkg/text/template/).
 
 You can access environment variables within a template in the `.Env` object.
 
-There are some built-in functions as well: Masterminds/sprig v3
-- github: https://github.com/Masterminds/sprig
-- doc: http://masterminds.github.io/sprig/
+There are some built-in functions as well: sprout
+- github: https://github.com/go-sprout/sprout
+- doc: https://docs.atom.codes/sprout
 
 More functions:
 - toBool
 - countRune
-- pipeline compatible regex functions from sprig 
+- pipeline compatible regex functions from sprout
     - reReplaceAll
     - reReplaceAllLiteral
     - reSplit

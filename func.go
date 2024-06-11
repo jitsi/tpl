@@ -6,12 +6,12 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/Masterminds/sprig/v3"
+	"github.com/go-sprout/sprout"
 )
 
 func FuncMap() template.FuncMap {
-	// sprig
-	f := sprig.TxtFuncMap()
+	// sprout
+	f := sprout.TxtFuncMap()
 
 	// marshaling
 	f["toBool"] = toBool
@@ -21,7 +21,7 @@ func FuncMap() template.FuncMap {
 		return len([]rune(s))
 	}
 
-	// Fix sprig regex functions
+	// Fix sprout regex functions
 	oRegexReplaceAll := f["regexReplaceAll"].(func(regex string, s string, repl string) string)
 	oRegexReplaceAllLiteral := f["regexReplaceAllLiteral"].(func(regex string, s string, repl string) string)
 	oRegexSplit := f["regexSplit"].(func(regex string, s string, n int) []string)
