@@ -11,7 +11,7 @@ import (
 
 func FuncMap() template.FuncMap {
 	// sprout
-	f := sprout.TxtFuncMap()
+	f := sprout.FunctionMap{}
 
 	// marshaling
 	f["toBool"] = toBool
