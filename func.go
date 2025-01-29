@@ -6,12 +6,12 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/go-sprout/sprout"
+	"github.com/go-sprout/sprout/sprigin"
 )
 
 func FuncMap() template.FuncMap {
 	// sprout
-	f := sprout.FunctionMap{}
+	f := sprigin.TxtFuncMap()
 
 	// marshaling
 	f["toBool"] = toBool
@@ -22,17 +22,32 @@ func FuncMap() template.FuncMap {
 	}
 
 	// Fix sprout regex functions
-	oRegexReplaceAll := f["regexReplaceAll"].(func(regex string, s string, repl string) string)
-	oRegexReplaceAllLiteral := f["regexReplaceAllLiteral"].(func(regex string, s string, repl string) string)
-	oRegexSplit := f["regexSplit"].(func(regex string, s string, n int) []string)
+	oRegexReplaceAll := f["regexReplaceAll"].(func(...interface{}) (interface{}, error))
+	oRegexReplaceAllLiteral := f["regexReplaceAllLiteral"].(func(...interface{}) (interface{}, error))
+	oRegexSplit := f["regexSplit"].(func(...interface{}) (interface{}, error))
+
 	f["reReplaceAll"] = func(regex string, replacement string, input string) string {
-		return oRegexReplaceAll(regex, input, replacement)
+		out, err := oRegexReplaceAll(regex, input, replacement)
+		if err != nil {
+			return input // Return original string on error
+		}
+		return out.(string)
 	}
+
 	f["reReplaceAllLiteral"] = func(regex string, replacement string, input string) string {
-		return oRegexReplaceAllLiteral(regex, input, replacement)
+		out, err := oRegexReplaceAllLiteral(regex, input, replacement)
+		if err != nil {
+			return input // Return original string on error
+		}
+		return out.(string)
 	}
+
 	f["reSplit"] = func(regex string, n int, input string) []string {
-		return oRegexSplit(regex, input, n)
+		out, err := oRegexSplit(regex, input, n)
+		if err != nil {
+			return []string{input} // Return single-element slice on error
+		}
+		return out.([]string)
 	}
 
 	return f
